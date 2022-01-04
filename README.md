@@ -26,8 +26,8 @@ r1 = s.get('http://api.ipify.org?format=json', proxies={"http":"socks5://proxy1:
 r2 = s.get('http://api.ipify.org?format=json', proxies={"http":"socks5://proxy2:port2", "https":"socks5://proxy2:port2"})
 print(r1.text)
 ```
-r1 will first go through the whole chain and then on proxy1
-r2 will firstly go through the whole chain and then on proxy2
+- r1 will firstly go through the whole chain and then on proxy1
+- r2 will firstly go through the whole chain and then on proxy2
 
 ## ⚠️ Known Bugs ⚠️
 when using **http proxies both in the specified proxychains and after**, in the requests built-in proxies param, it will throw exceptions.
