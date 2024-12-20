@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "requests-chain"
+version = "0.1.2"
+description = "Adds the ability of using a proxy chains to the python requests module. "
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "makovez", email = "namosoermejo@gmail.com" }
+]
+dependencies = ["requests", "six"]  # Add your library dependencies

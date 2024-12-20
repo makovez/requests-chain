@@ -1,17 +1,16 @@
 import requests
-from requests_chains import chain_requests
+from requests_chain import chain_requests
 
 proxychains = [
-  "socks5://127.0.0.1:9050"
+        "http://localhost:8888",
+        "http://localhost:8889"
 ]
 
 chain_requests(proxychains) # Proxychains everything in requests
 
 
-s = requests.Session()
-
 while 1:
-  a = s.get('http://api.ipify.org?format=json')
-  print(a.text)
+    a = requests.get('http://api.ipify.org?format=json')
+    print(a.text)
 
 

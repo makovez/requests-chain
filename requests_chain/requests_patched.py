@@ -1,9 +1,9 @@
 
-import urllib3, socks
-from pyChainedProxy import custom_create_connection as custom_socks_create_connection
-from . import chained_socks
+import urllib3, socks, six
+from requests_chain import chained_socks
+from requests_chain.chained_socks import custom_create_connection as custom_socks_create_connection
 
-from urllib3.util.connection import allowed_gai_family, six, LocationParseError, socket, _set_socket_options
+from urllib3.util.connection import allowed_gai_family, LocationParseError, socket, _set_socket_options
 
 
 

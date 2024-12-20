@@ -1,0 +1,1 @@
+from requests_chain.requests_patched import chain_requests

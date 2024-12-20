@@ -893,15 +893,31 @@ class socksocket(socket.socket):
             return self.__sock.send(*args, **kwargs)
 
     def sendall(self, *args, **kwargs):
-        if self.__negotiating:            
-            if (isinstance(args[0],int)): 
-                #self.__buffer += bytes([args[0]])
-                print("int")
+        # print("sendall")
+        # Ensure self.__buffer is initialized
+        if not hasattr(self, "__buffer") or self.__buffer is None:
+            self.__buffer = b""  # Assuming buffer should be bytes
+
+        if self.__negotiating:
+            if isinstance(args[0], int):
+                # print(bytes([args[0]]))
+                self.__buffer += bytes([args[0]])  # Append bytes representation of the integer
+                # print("int")
             else:
-                self.__buffer += str(args[0] )      
+                # Ensure consistency, convert to bytes if not already
+                if isinstance(args[0], str):
+                    self.__buffer += args[0].encode('utf-8')
+                elif isinstance(args[0], bytes):
+                    self.__buffer += args[0]
+                else:
+                    raise TypeError("Unsupported type for args[0]. Expected int, str, or bytes.")
+            
+            # Negotiate proxy after processing the data
             self.__negotiatehttpproxy()
         else:
+            # Forward call to the actual socket
             return self.__sock.sendall(*args, **kwargs)
+
 
     def __negotiatehttp(self, destaddr, destport, proxy):
         """__negotiatehttpproxy(self, destaddr, destport, proxy)
@@ -917,49 +933,60 @@ class socksocket(socket.socket):
             self.__override.extend(['send', 'sendall'])
 
     def __negotiatehttpproxy(self):
-        """__negotiatehttp(self, destaddr, destport, proxy)
-        Negotiates an HTTP request through an HTTP proxy server.
-        """
+        """Negotiates an HTTP request through an HTTP proxy server."""
         buf = self.__buffer
-        buf = buf.replace("b'", "").replace("\\r","\r").replace("\\n","\n")
+
+        # Ensure buf is a bytes object
+        if isinstance(buf, str):
+            buf = buf.encode('utf-8')  # Convert string to bytes if necessary
+        
+        # Now replace bytes safely
+        buf = buf.replace(b"b'", b"").replace(b"\\r", b"\r").replace(b"\\n", b"\n")
+        
+        # Destructure the negotiating parameters
         host, port, proxy = self.__negotiating
 
-        # If our buffer is tiny, wait for data.
-        if len(buf) <= 3: return
+        # If our buffer is tiny, wait for more data
+        if len(buf) <= 3:
+            return
 
-        # If not HTTP, fall back to HTTP CONNECT.
-        if buf[0:3].lower() not in ('get', 'pos', 'hea',
-                                    'put', 'del', 'opt', 'pro'):
-            if DEBUG: DEBUG("*** Not HTTP, failing back to HTTP CONNECT.")
+        # If not HTTP, fall back to HTTP CONNECT
+        if buf[0:3].lower() not in (b'get', b'pos', b'hea', b'put', b'del', b'opt', b'pro'):
+            if DEBUG: 
+                DEBUG("*** Not HTTP, falling back to HTTP CONNECT.")
             self.__stop_http_negotiation()
             self.__negotiatehttpconnect(host, port, proxy)
             self.__sock.sendall(buf)
             return
 
         # Have we got the end of the headers?
-        if buf.find('\r\n\r\n') != -1:
-            CRLF = '\r\n'
-        elif buf.find('\n\n') != -1:
-            CRLF = '\n'
+        if b'\r\n\r\n' in buf:
+            CRLF = b'\r\n'
+        elif b'\n\n' in buf:
+            CRLF = b'\n'
         else:
-            # Nope
+            # Nope, still waiting for more data
             return
 
-        # Remove our send/sendall hooks.
+        # Remove the send/sendall hooks
         self.__stop_http_negotiation()
 
-        # Format the proxy request.
+        # Format the proxy request
         host += ':%d' % port
         headers = buf.split(CRLF)
+        
         for hdr in headers:
-            if hdr.lower().startswith('host: '): host = hdr[6:]
-        req = headers[0].split(' ', 1)
-        headers[0] = '%s http://%s%s' % (req[0], host, req[1])
-        headers[1] = self.__getproxyauthheader(proxy) + headers[1]
+            if hdr.lower().startswith(b'host: '): 
+                host = hdr[6:]
+        
+        req = headers[0].split(b' ', 1)
+        headers[0] = b'%s http://%s%s' % (req[0], host, req[1])
+        headers[1] = self.__getproxyauthheader(proxy).encode('utf-8') + headers[1]
 
-        # Send it!
-        if DEBUG: DEBUG("*** Proxy request:\n%s***" % CRLF.join(headers))
-        self.__sock.sendall(CRLF.join(headers).encode())
+        # Send the proxy request
+        if DEBUG:
+            DEBUG("*** Proxy request:\n%s***" % CRLF.join(headers).decode('utf-8'))
+        self.__sock.sendall(CRLF.join(headers))
 
     def __negotiatehttpconnect(self, destaddr, destport, proxy):
         """__negotiatehttp(self, destaddr, destport, proxy)
