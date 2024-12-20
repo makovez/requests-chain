@@ -1,6 +1,11 @@
 # Requests chains
 Adds the ability to use proxy chains directly the python requests module.
 
+# Install the package
+```bash
+pip install requests-chain
+```
+
 ## Import necessary modules
 ```python3
 import requests
